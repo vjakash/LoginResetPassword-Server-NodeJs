@@ -12,6 +12,15 @@ const app = express();
 
 const cors = require('cors');
 app.use(cors());
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "*");
+    if (req.method == 'OPTIONS') {
+        res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,PATCH");
+        return res.status(200).json({});
+    }
+    next();
+})
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
@@ -38,7 +47,11 @@ let mailOptions = {
 app.listen(port, () => {
     console.log(`listening on port ${port}`);
 })
-
+app.get('/', (req, res) => {
+    res.json({
+        message: "welcome to the server"
+    })
+})
 app.post('/register', (req, res) => {
     if (req.body.email == undefined || req.body.password == undefined) {
         res.status(400).json({
