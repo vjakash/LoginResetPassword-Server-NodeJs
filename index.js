@@ -171,8 +171,10 @@ app.post('/forgot', (req, res) => {
         mongodb.connect(dbURL, (err, client) => {
             if (err) throw err;
             let expiryInHour = 2;
+            let timestamp = new Date();
+            let expiry = expiryInHour * 60 * 60 * 1000;
             let db = client.db("cloudstack");
-            db.collection("users").update({ email: req.body.email }, { $set: { reset_token: token } }, (err, data) => {
+            db.collection("users").update({ email: req.body.email }, { $set: { reset_token: token, timestamp: timestamp, expiry: expiry } }, (err, data) => {
                 if (err) throw err;
                 mailOptions.to = req.body.email;
                 mailOptions.subject = 'Cloud Stack-Password reset '
@@ -180,6 +182,7 @@ app.post('/forgot', (req, res) => {
                                     <h3>Click the link below to redirect to password rest page</h3>
                                     <a href='https://cloudstack.netlify.app/#/resetpassword/${token}/${req.body.email}'>https://cloudstack.netlify.app/#/resetpassword/${token}/${req.body.email}</a><br>
                                     <p>The link expires in <strong>${expiryInHour} hrs</strong></p></body></html>`
+                    // <a href='https://cloudstack.netlify.app/#/resetpassword/${token}/${req.body.email}'>https://cloudstack.netlify.app/#/resetpassword/${token}/${req.body.email}</a>
                 transporter.sendMail(mailOptions, function(error, info) {
                     if (error) {
                         console.log(error);
@@ -188,8 +191,7 @@ app.post('/forgot', (req, res) => {
                         })
                     } else {
                         console.log('Email sent: ' + info.response);
-                        let timestamp = new Date();
-                        let expiry = expiryInHour * 60 * 60 * 1000;
+
                         res.status(200).json({
                             message: `Verification mail sent to ${req.body.email}`,
                             email: req.body.email,
@@ -221,7 +223,7 @@ app.post('/resetpassword', (req, res) => {
                         if (err) throw err;
                         // Store hash in your password DB.
                         req.body.password = hash;
-                        db.collection("users").update({ email: req.body.email, reset_token: req.body.token }, { $set: { password: hash, reset_token: '', reset_expire: '' } }, (err, data) => {
+                        db.collection("users").update({ email: req.body.email, reset_token: req.body.token }, { $set: { password: hash, reset_token: '', timestamp: '', expiry: '' } }, (err, data) => {
                             if (err) throw err;
                             // console.log(data);
                             client.close();
@@ -235,6 +237,26 @@ app.post('/resetpassword', (req, res) => {
             } else {
                 res.status(400).json({
                     message: "The email id or token is not valid"
+                })
+            }
+        })
+    })
+})
+app.get('/verify/:token/:email', (req, res) => {
+    let token = req.params.token;
+    let email = req.params.email;
+    console.log(token, email);
+    mongodb.connect(dbURL, (err, client) => {
+        if (err) throw err;
+        let db = client.db("cloudstack");
+        db.collection("users").findOne({ email: email, reset_token: token }, (err, data) => {
+            if (err) throw err;
+            client.close();
+            if (data) {
+                res.status(200).json(data);
+            } else {
+                res.status(400).json({
+                    message: "Reset link is broke...try reset the password again"
                 })
             }
         })
