@@ -178,7 +178,7 @@ app.post('/forgot', (req, res) => {
                 mailOptions.subject = 'Cloud Stack-Password reset '
                 mailOptions.html = `<html><body><h1>Reset Password link</h1>
                                     <h3>Click the link below to redirect to password rest page</h3>
-                                    <a href='http://localhost:4200/resetpassword/${token}/${req.body.email}'>http://localhost:4200/resetpassword/${token}/${req.body.email}</a><br>
+                                    <a href='https://cloudstack.netlify.app/resetpassword/${token}/${req.body.email}'>https://cloudstack.netlify.app/resetpassword/${token}/${req.body.email}</a><br>
                                     <p>The link expires in <strong>${expiryInHour} hrs</strong></p></body></html>`
                 transporter.sendMail(mailOptions, function(error, info) {
                     if (error) {
